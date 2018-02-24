@@ -41,13 +41,27 @@
 
 # Constructor 
 makeAscendNums <- function(x){
+  
+  
+  if(length(x) == 0)
+    stop("Error: Undefined Operation")
+  
   # Instance Variable 
-  obj <- x
+  obj <- as.vector(x)
   # Compute Difference among consecutive elements
   diff <- x[-1] - x[-length(x)]
-  attr(obj,'strictAscend') <- all(diff >= 0)
   
-  if (attr(obj,'strictAscend') == F){
+  
+  if(length(x) > 1){
+    
+    attr(obj,'strictAscend') <- all(diff > 0)
+  }
+  else{
+    attr(obj,'strictAscend') <- F
+  }
+  
+  
+  if (any(diff < 0)){
     stop('not nondecreasing')
   }
   
@@ -57,15 +71,16 @@ makeAscendNums <- function(x){
 }
 
 
-x <- c(5,12,13)
+x <- c(-4,99)
 xan <- makeAscendNums(x)
-xan
 
 
-z <- c(4,12,15,17)
+z <- c(-4,12,15,17)
 zan <- makeAscendNums(z)
 
-
 out <- xan + zan
-out
+
+print(out)
+
+
 
