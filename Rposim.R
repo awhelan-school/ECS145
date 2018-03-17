@@ -32,7 +32,7 @@
 #             yield(): Starts the busy-while loop and initiates another thread to run. 
 #
 
-
+library(bigmemory)
 
 initOS <- function(max_time, num_threads, appcols=NULL){
   
@@ -44,6 +44,7 @@ initOS <- function(max_time, num_threads, appcols=NULL){
   OStack$max_time <- max_time
   OStack$num_threads <- num_threads
   OStack$active_process <- 1
+  OStack$thread_id <- 1
   
   # Event List
   OStack$event_list <- matrix(nrow = num_threads, ncol = 2 + length(appcols))
@@ -61,9 +62,11 @@ initOS <- function(max_time, num_threads, appcols=NULL){
   OStack
 }
 
-activate <- function(){
+activate <- function(OStack){
   
-  system2(command = "Rscript", args = 'start.R', wait = F)
+  id <- getID(OStack)
+  
+  system2(command = "xterm", args = sprintf("-e Rscript start.R \"%s\" &", id ))
   
   
 }
@@ -85,7 +88,16 @@ yield <- function(){
   
 }
 
+getID <- function(OStack){
+  
+  OStack$thread_id <- OStack$thread_id + 1
+  
+  
+}
+
 
 
 OStack <- initOS(100, 5)
-activate()
+activate(OStack)
+activate(OStack)
+
