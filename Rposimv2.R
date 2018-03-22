@@ -73,6 +73,10 @@ activate <- function(OStack, fname=NULL){
   
 }
 
+reactivate <- function(ts, reactivate_id){
+  ts[reactivate_id, "Wait"] <- -1
+}
+
 simulate <- function(OStack){
   
   for (i in 2:OStack$num_threads)
@@ -93,19 +97,24 @@ simulate <- function(OStack){
       # Thread Has not Run not Run since last iteration
       if (OStack$thread_stack[i, "Time"] != 0)
       {
+        print(i)
+        if(OStack$thread_stack[i, "Time"] == -1){OStack$thread_stack[i, "Time"] <- 0}
         OStack$event_list[i, 1] <- OStack$thread_stack[i, 2] + OStack$now
         OStack$event_list[i, 2] <- OStack$thread_stack[i, 1]
         # Reset Thread's Time Parameter
         OStack$thread_stack[i, "Time"] <- 0
       }
     }
-    if(length(OStack$event_list[1,]) != 0)
+    events <- OStack$event_list[,'Event Time']
+    if(length(events[!is.na(events)]) != 0)
     {
       
       print(OStack$thread_stack)
       #event has occured
       #delete the event
-      this_event_thread <- which.min(OStack$event_list[,'Event Time'])
+      print(length(OStack$event_list[,'Event Time']))
+      print(OStack$event_list)
+      this_event_thread <- as.numeric(which.min(OStack$event_list[,'Event Time']))
       this_event_time <- OStack$event_list[this_event_thread,1]
       
       
@@ -153,7 +162,7 @@ simulate <- function(OStack){
   
 }
 
-yield <- function(func=NULL,resource=NULL, wait=0, thread_id, res_id, ts){
+yield <- function(func=NULL,resource=NULL, wait, thread_id, res_id, ts){
 
   print(ts)
   
@@ -200,11 +209,26 @@ yield <- function(func=NULL,resource=NULL, wait=0, thread_id, res_id, ts){
       ts[1,resource] <- (ts[1,resource] + 1)
       return()
     }
+    
+    if(func == 'passivate'){
+      ts[thread_id,'Active'] <- 0
+      ts[res_id, 'Active'] <- 1
+      while(ts[thread_id,1] == 0){}
+      return()
+    }
+    if(func == 'hold'){
+      ts[thread_id, "Time"] <- wait
+      ts[thread_id, "Active"] <- 0
+      # Give Control To OS/Worker Thread with resume id
+      ts[res_id, "Active"] <- 1
+
+      cat("Hold Since Inactive \n")
+
+      # hold while thread is inactive
+      while (ts[thread_id, "Active"] == 0){}
+      
+    }
   }
-  
-  
-  
-  #print(func)
   
   
   ts[thread_id, "Time"] <- wait
