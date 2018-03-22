@@ -1,4 +1,4 @@
-source("Rposim.R")
+source("Rposimv2.R")
 setwd('.')
 set.seed(12345)
 
@@ -28,10 +28,13 @@ Run <- function(){
     
     # Set Current Time
     start_up_time <- now(ts)
+    
     # Hold for exponentially distributed time
     up_time <- rexp(1, Machine$up_rate)
+    
     # Simulate UpTime
-    yield('hold', wait = up_time, thread_id = id, res_id = 1, ts = ts)
+    yield(func = 'hold', wait = up_time, thread_id = id, res_id = 1, ts = ts)
+    
     # Update Total Up Time
     Machine$total_up_time <- Machine$total_up_time + now(ts) - start_up_time
     
@@ -42,21 +45,23 @@ Run <- function(){
     # Update Number of Breakdowns
     Machine$Nrep <- Machine$Nrep + 1
     ts[id, 'num_breakdowns'] <- Machine$Nrep
+
     
     # Check if Resource is avaiable
     if(ts[1, 'num_repair_men'] == 1){
-      
-      Machine$NImmedRed <- Machine$NImmedRed+ 1 
-      ts[1, 'immediate_rep'] <- Machine$NImmedRed
-      
+
+      Machine$NImmedRep <- Machine$NImmedRep + 1
+      ts[id, 'immediate_rep'] <- Machine$NImmedRep
+
     }
       
-    cat('In App REquest Start')
+
     yield(func = 'request', resource = 'num_repair_men', thread_id = id, res_id = 1, ts = ts)
-    cat('In App REquest Done')
+
     # Simulate Repair
     rep_time <- rexp(1, Machine$rep_rate)
     yield(func = 'hold', wait = rep_time, thread_id = id, res_id = 1, ts = ts)
+    
     yield(func = 'release', resource = 'num_repair_men', thread_id = id, res_id = 1, ts = ts)
     
   }  

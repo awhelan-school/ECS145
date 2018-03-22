@@ -53,29 +53,34 @@ initOS <- function(max_time, num_threads, appcols=NULL, app_parameters=NULL, res
   values <- as.vector(unlist(resource))
   start = (3+length(app_parameters)+1)
   end = start + length(resource) - 1
+  
+  # Initialize Thread/OS Resources
+  OStack$thread_stack[,start:end] <- -1
   OStack$thread_stack[1,start:end] <- values
 
   
   thread_stack <- bigmemory::describe(OStack$thread_stack)
-  save(thread_stack, file='thread_stack')
   
   OStack$thread_stack[1, 2] <- OStack$now
+  
+  save(thread_stack, file='thread_stack')
   OStack
 }
 
 activate <- function(OStack, fname=NULL){
   id <- getID(OStack)
-  system2(command = "xterm", args = sprintf("-e Rscript \"%s\" \"%s\" &", fname, id ))
+  system2(command = "xterm", args = sprintf("-e Rscript \"%s\" \"%s\" &",fname, id ))
   
 }
 
 simulate <- function(OStack){
   
+  
+  
   while(OStack$now < OStack$max_time)
   {
     OStack$thread_stack[1,2] <- OStack$now
     
-    cat("ERROR4")
     
     #set a wait for all threads to finish?
     
@@ -96,81 +101,87 @@ simulate <- function(OStack){
       #delete the event
       this_event_thread <- which.min(as.vector(OStack$event_list[,1]))
       this_event_time <- OStack$event_list[this_event_thread,1]
+      
+      
       this_event_operation <- OStack$thread_stack[this_event_thread, 'Operation']
 
       OStack$event_list[this_event_thread,] <- NA
       
-      cat("ERROR5\n")
+
       # Hold
-      if(this_event_operation == 2){
+      if(this_event_operation == 1){
         #increment time
         OStack$now <- this_event_time
         OStack$thread_stack[1, 2] <- OStack$now
       }
-
-      cat("ERROR6\n")
       
-      print(OStack$now)
-      print(this_event_thread)
-      print(OStack$thread_stack)
+      # Request
+      if(this_event_operation == 2){
+        
+        
+      }
+      
+      # Release
+      if(this_event_operation == 3){
+        
+        
+      }
+
       
       #yield to activated event's thread
       yield(wait = OStack$now, thread_id = 1, res_id= this_event_thread, ts=OStack$thread_stack)
       
-      cat("ERROR7\n")
+
     }
   }
   
 }
 
-
-yield <- function(func='NULL',resource=NULL, wait, thread_id, res_id, ts){
+yield <- function(func=NULL,resource=NULL, wait, thread_id, res_id, ts){
 
   print(ts)
-  print(thread_id)
   
-  ts[thread_id, "Operation"] <- getOperation(func)
-  
-  print(func)
-  
-  cat("yield resorce name - ERROR1\n")
-  print(resource)
-  
-  # Resource Available
-  if(func == 'request' & !is.null(resource)){
-
-    cat("in request \n")
-    if(ts[1,resource] > 0){
-      ts[1,resource] <- ts[1,resource] - 1
-    }
-    else{
-      # Wait For Resource
-      while (ts[1, resource] == 0){}
-    }
-  }
-
-  if(func == 'release' & !is.null(resource)){
+  # Set Operation
+  if(!is.null(func)){
+    ts[thread_id, "Operation"] <- getOperation(func)
     
-    cat("in release \n")
-    ts[1,resource] <- ts[1,resource] + 1
+    # Resource Available
+    if(func == 'request' & !is.null(resource)){
+
+      cat("in request \n")
+      if(ts[1,resource] > 0){
+        
+        ts[thread_id,resource] <- (ts[1,resource])
+        ts[1,resource] <- (ts[1,resource] - 1)
+        
+        # Return ????
+        
+      }
+      else{
+        # Wait For Resource
+        while (ts[1, resource] == 0){}
+      }
+    }
+
+    if(func == 'release' & !is.null(resource)){
+
+      cat("in release \n")
+      ts[1,resource] <- (ts[1,resource] + 1)
+    }
   }
   
-  cat("yield - ERROR2\n")
+  
+  
+  #print(func)
+  
+  
   ts[thread_id, "Time"] <- wait
   ts[thread_id, "Active"] <- 0
-  
-  
-  print(thread_id)
-  print(res_id)
-  
-  # Give Control To OS Thread
+  # Give Control To OS/Worker Thread with resume id
   ts[res_id, "Active"] <- 1
-  
-  cat("yield - ERROR3\n")
+
   # hold while thread is inactive
   while (ts[thread_id, "Active"] == 0){}
-  
-  cat("yield - ERROR4\n")
   
   
 }
@@ -187,9 +198,9 @@ getID <- function(OStack){
 getOperation <- function(op){
   
   if(is.null(op))
-    return(1)
+    return(-1)
   
-  defaultOps <- c('NULL', 'hold', 'request', 'release', 'passivate', 'cancel')
+  defaultOps <- c('hold', 'request', 'release', 'passivate', 'cancel')
   
   return(which(defaultOps == op))
   
