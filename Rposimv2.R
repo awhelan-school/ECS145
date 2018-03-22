@@ -79,7 +79,7 @@ simulate <- function(OStack){
   
   while(OStack$now < OStack$max_time)
   {
-    OStack$thread_stack[1,2] <- OStack$now
+    OStack$thread_stack[1,'Time'] <- OStack$now
     
     
     #set a wait for all threads to finish?
@@ -107,12 +107,18 @@ simulate <- function(OStack){
 
       OStack$event_list[this_event_thread,] <- NA
       
+      cat('Operation: ')
+      print(this_event_operation)
 
+      cat('ThreadID: ')
+      print(this_event_thread)
+      
       # Hold
       if(this_event_operation == 1){
         #increment time
         OStack$now <- this_event_time
         OStack$thread_stack[1, 2] <- OStack$now
+
       }
       
       # Request
@@ -124,13 +130,15 @@ simulate <- function(OStack){
       # Release
       if(this_event_operation == 3){
         
-        
+
       }
 
+      cat('OS yield start \n')
       
       #yield to activated event's thread
       yield(wait = OStack$now, thread_id = 1, res_id= this_event_thread, ts=OStack$thread_stack)
       
+      cat('OS yield done \n')
 
     }
   }
@@ -148,16 +156,23 @@ yield <- function(func=NULL,resource=NULL, wait, thread_id, res_id, ts){
     # Resource Available
     if(func == 'request' & !is.null(resource)){
 
-      cat("in request \n")
+      cat("in request: ")
+      print(thread_id)
+      
+      cat("func : ")
+      print(func)
+      
       if(ts[1,resource] > 0){
         
         ts[thread_id,resource] <- (ts[1,resource])
         ts[1,resource] <- (ts[1,resource] - 1)
         
+        return()
         # Return ????
         
       }
       else{
+        cat("Waiting for Resource\n")
         # Wait For Resource
         while (ts[1, resource] == 0){}
       }
@@ -180,6 +195,8 @@ yield <- function(func=NULL,resource=NULL, wait, thread_id, res_id, ts){
   # Give Control To OS/Worker Thread with resume id
   ts[res_id, "Active"] <- 1
 
+  cat("Hold Since Inactive \n")
+  
   # hold while thread is inactive
   while (ts[thread_id, "Active"] == 0){}
   
