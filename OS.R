@@ -12,8 +12,8 @@ simulate(OStack)
 
 
 total_time <- 0
-#break_downs <- 0
-#imm_rep <- 0
+break_downs <- 0
+imm_rep <- 0
 
 for(i in 2:3){
   
@@ -25,8 +25,10 @@ for(i in 2:3){
 
 cat("Portion of Up_Time: \n")
 print (total_time/(2 * OStack$max_time))
-#cat("Portion of Immediate Repairs\n")
-#print (imm_rep/break_downs)
+cat("Portion of Immediate Repairs\n")
+print (imm_rep/break_downs)
 
 cat("Time Now\n")
 print(OStack$now)
+
+system2(command = "rm", args = 'thread_stack')

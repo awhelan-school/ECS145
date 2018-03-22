@@ -75,6 +75,10 @@ activate <- function(OStack, fname=NULL){
 
 simulate <- function(OStack){
   
+  for (i in 2:OStack$num_threads)
+  {
+    yield(wait = OStack$now, thread_id = 1, res_id= i, ts=OStack$thread_stack)
+  }
   
   
   while(OStack$now < OStack$max_time)
@@ -97,13 +101,15 @@ simulate <- function(OStack){
     }
     if(length(OStack$event_list[1,]) != 0)
     {
+      
+      print(OStack$thread_stack)
       #event has occured
       #delete the event
-      this_event_thread <- which.min(as.vector(OStack$event_list[,1]))
+      this_event_thread <- which.min(OStack$event_list[,'Event Time'])
       this_event_time <- OStack$event_list[this_event_thread,1]
       
       
-      this_event_operation <- OStack$thread_stack[this_event_thread, 'Operation']
+      this_event_operation <- OStack$thread_stack[this_event_thread, "Operation"]
 
       OStack$event_list[this_event_thread,] <- NA
       
@@ -124,13 +130,15 @@ simulate <- function(OStack){
       # Request
       if(this_event_operation == 2){
         
-        
+
       }
       
       # Release
       if(this_event_operation == 3){
         
 
+        
+        
       }
 
       cat('OS yield start \n')
@@ -145,10 +153,11 @@ simulate <- function(OStack){
   
 }
 
-yield <- function(func=NULL,resource=NULL, wait, thread_id, res_id, ts){
+yield <- function(func=NULL,resource=NULL, wait=0, thread_id, res_id, ts){
 
   print(ts)
   
+
   # Set Operation
   if(!is.null(func)){
     ts[thread_id, "Operation"] <- getOperation(func)
@@ -166,7 +175,6 @@ yield <- function(func=NULL,resource=NULL, wait, thread_id, res_id, ts){
         
         ts[thread_id,resource] <- (ts[1,resource])
         ts[1,resource] <- (ts[1,resource] - 1)
-        
         return()
         # Return ????
         
@@ -174,7 +182,15 @@ yield <- function(func=NULL,resource=NULL, wait, thread_id, res_id, ts){
       else{
         cat("Waiting for Resource\n")
         # Wait For Resource
+        ts[thread_id, "Active"] <- 0
+        # Give Control To OS/Worker Thread with resume id
+        ts[res_id, "Active"] <- 1
         while (ts[1, resource] == 0){}
+        
+        ts[thread_id,resource] <- (ts[1,resource])
+        ts[1,resource] <- (ts[1,resource] - 1)
+        
+        return()
       }
     }
 
@@ -182,6 +198,7 @@ yield <- function(func=NULL,resource=NULL, wait, thread_id, res_id, ts){
 
       cat("in release \n")
       ts[1,resource] <- (ts[1,resource] + 1)
+      return()
     }
   }
   
@@ -196,7 +213,7 @@ yield <- function(func=NULL,resource=NULL, wait, thread_id, res_id, ts){
   ts[res_id, "Active"] <- 1
 
   cat("Hold Since Inactive \n")
-  
+
   # hold while thread is inactive
   while (ts[thread_id, "Active"] == 0){}
   
